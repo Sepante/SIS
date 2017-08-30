@@ -7,7 +7,7 @@
 #include <math.h>
 using namespace std;
 
-int L = pow (2, 3);
+int L = pow (2, 4);
 //int L = 10;
 int n = L*L;
 //int n =100;
