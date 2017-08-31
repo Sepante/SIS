@@ -2,17 +2,21 @@
 #include <fstream>
 #include <vector>
 #include <array>
-//#include <numeric>
+#include <set>
 #include <ctime>
 #include <math.h>
 using namespace std;
 
-int L = pow (2, 4);
+int L = pow (2, 7);
 //int L = 10;
 int n = L*L;
 //int n =100;
 float cnct_prob = (float)4/(float)n;
 vector<vector<int>>  adj_matrix(n, vector<int>(n));
+int seed;
+int i;
+set <int> actives={};
+set <int> actives_cp=actives;
 
 int I_num[]={1,1};
 int S_num = n-1;
@@ -79,6 +83,21 @@ void constr_erdos(float cnct_prob) //construct adjacency matrix in the case of e
 }
 
 
+void turn_R(int i, int dis_index)
+{
+	state[i]*=dis_index;				//turn_R after spreading between the neighbors. (one step)
+	I_num[dis_index-2]--;
+	if(state[i]==36 || state[i]==(dis_index*dis_index) )
+	{
+		actives.erase(i);
+		//cout<<i<<" erased for being "<<state[i]<<endl;
+	}
+	
+	else;
+		//cout<<i<<"not erased for being "<<state[i]<<endl;
+		
+
+}
 
 void turn_I(int i, int dis_index)
 {
@@ -94,6 +113,7 @@ void turn_I(int i, int dis_index)
 			{
 				state[i]*=dis_index;
 				I_num[dis_index-2]++; //dis_index is 2 or 3, but indexes for I_num are 0 & 1, so we have to use -2.
+				actives.insert(i);
 				S_num--;
 			}
 		}
@@ -105,6 +125,7 @@ void turn_I(int i, int dis_index)
 			{
 				state[i]*=dis_index;
 				I_num[dis_index-2]++; //dis_index is 2 or 3, but indexes for I_num are 0 & 1, so we have to use -2.
+				actives.insert(i);
 			}
 		}
 		
@@ -136,8 +157,11 @@ void initialize() //initialize variables for the next run
 	I_num[0]=I_num[1]=1;
 	fill(state.begin(), state.end(), 1);
 	//initial seed
-	state[rand()%n] = 6;
+	seed = rand()%n;
+	state[seed] = 6;
 	state_cp = state;
+	actives={seed};
+	actives_cp = actives;
 }
 
 int main()
@@ -155,7 +179,7 @@ int main()
 	vector<float> q_set={0.1 ,0.2, 0.4, 0.6, 0.8, 1};
 	p_set={0.25};
 	//q_set={0.1, 0.5};
-	q_set={0.1};
+	q_set={1};
 	
 	//write system properties to file, for later use in python.
 	fout<<n<<"\n";
@@ -180,16 +204,20 @@ int main()
 			{
 			initialize(); //initialize variables for the next run
 				//the main time loop of the program.
-				for(int t=1; t<=1000000000 && I_num[0]+I_num[1] >= 1; t++) //I_num[0]+I_num[1] >= 1 is to check if there remains any active nodes to further change the state.
+				for(int t=1; t<=100000000000 && actives.size() >= 1; t++) //I_num[0]+I_num[1] >= 1 is to check if there remains any active nodes to further change the state.
 				{
-					
-					//cout<<t<<endl<<endl;
 					state_cp = state;
+					actives_cp = actives;
+					
 					//loop on the infected nodes, in order to spread the infection, and afterwards turning them to recovered nodes.
-					for (int i=0; i<=n-1; i++)
+					for (set<int>::iterator it=actives_cp.begin(); it!=actives_cp.end(); it++)
 					{
+				
+						i = *it;
+						//cout<< state[i]<<endl;
 						
 						dis_index = (rand()%2)+2; //which disease to start spreading first for node.
+						
 						for (int dummy=0; dummy <= 1 ; dummy++, dis_index = ((dis_index+1)%2)+2) //this for, runs over two dis_indexes, dummy doesn't matter.
 						{
 							//cout<<"dummy: "<<dummy<<endl;
@@ -198,11 +226,12 @@ int main()
 								turn_grid_neighbs_I(i, dis_index);
 								//turn_general_neighbs_I(i, dis_index);
 								
-								state[i]*=dis_index;				//turn_R after spreading between the neighbors. (one step)
-								I_num[dis_index-2]--;
+								turn_R(i, dis_index);				//turn_R after spreading between the neighbors. (one step)
+								
 			
 							}				
 						}
+						
 					}
 
 				//cout<<"t: "<<t<<endl;
@@ -221,8 +250,8 @@ int main()
 				//fout<<n-S_num<<" ";
 				
 				}
-				if(run%1000==0)
-					cout << "p: " << p << "q: " << q << "run: " << run << endl;
+				if(run%(runNum/10)==0)
+					cout << "n: " << n << "p: " << p << "q: " << q << "run: " << run << endl;
 				//cout<<"R: "<<(float)(n-S_num)/n<<endl;
 				fout<<(n-S_num)<<"\n";
 				//cout<<(n-S_num)<<"\n";
